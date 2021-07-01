@@ -1,6 +1,7 @@
 using MultilevelEstimators
 using DifferentialEquations
 using Reporter
+using FileIO
 
 # DifferentialEquations SDE example taken from https://diffeq.sciml.ai/stable/tutorials/sde_example/
 
@@ -17,7 +18,7 @@ sol = solve(prob,EM())
 using Plots; plotly() # Using the Plotly backend
 p1 = plot(sol)
 
-# MultilevelEstimators.jl setup 
+# Multilevelusing FileIOEstimators.jl setup 
 
 SDE_probs = Vector{typeof(prob)}(undef,7)
 for i in 1:7
@@ -50,5 +51,6 @@ h = run(estimator, 5e-2)
 
 full_history = History(h)
 
-history=load(DIR,"history")
-report(history, filepath, include_preamble=true)
+filePath = DIR*"/UntitledEstimator.jld2"
+history = load(filePath,"history")
+report(history, include_preamble=true)
