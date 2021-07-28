@@ -11,12 +11,13 @@ DIR=pwd()*"/MultilevelEstimators/data"
 # define the problem
 α=0.05
 β=0.2
-u₀=1.
+u₀=100.
 f(u,p,t) = α*u
 g(u,p,t) = β*u
 dt = 1//2^(4)
-tspan = (0.0,1.0)
-P = (x) -> exp(-α)*maximum([0, x-1.])
+T = 1.
+tspan = (0.0, T)
+P_func = (x) -> exp(-α*T)*maximum([0, x-100.])
 prob = SDEProblem(f,g,u₀,(0.0,1.0), dt=dt)
 
 sol = solve(prob,EM())
@@ -38,20 +39,20 @@ MEAN /= P
 LL = 20
 SDE_probs = Vector{typeof(prob)}(undef,LL)
 for i in 1:LL
-    dt = 1//2^(i+1)
-    SDE_probs[i] = SDEProblem(f, g, u₀, (0.0,1.0), dt=dt)
+    dt = 1//10*1//2^(i+1)
+    SDE_probs[i] = SDEProblem(f, g, u₀, (0.0, 1.0), dt=dt)
 end
 
 function sample_SDE(level, ω) 
     # solve on finest grid
     sol1 = solve(SDE_probs[level + one(level)], EM()) # TO DO, dt needs to be varied
-    Qf = sol1.u[1:2:end]
+    Qf = P_func(sol1.u[end])
 
     # compute difference when not on coarsest grid
     dQ = Qf
     if level != Level(0)
         sol2 = solve(SDE_probs[level], EM(), noise=NoiseWrapper(sol1.W))
-        Qc = sol2.u
+        Qc = P_func(sol2.u[end])
         dQ -= Qc
     end
 
@@ -62,7 +63,7 @@ distributions = [Normal()]
 estimator = Estimator(ML(), MC(), sample_SDE, distributions, folder=DIR)
 
 # run Estimator
-h = run(estimator, 5e-2)
+h = run(estimator, 5e-1)
 
 S = MultilevelEstimators.samples_diff(estimator)
 name = estimator[:name]
